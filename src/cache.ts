@@ -1,16 +1,15 @@
-import { OPFSFileSystem } from "./fs.ts";
-import { resolvePath } from "./path.ts";
-import type { CacheEntryMeta } from "./types.ts";
+import { OPFSFileSystem } from "./fs";
+import { resolvePath } from "./path";
+import type { CacheEntryMeta } from "./types";
 
-export type { CacheEntryMeta } from "./types.ts";
-export type { ResolvedPath } from "./path.ts";
-export { resolvePath } from "./path.ts";
-export { OPFSFileSystem } from "./fs.ts";
+export type { CacheEntryMeta } from "./types";
+export type { ResolvedPath } from "./path";
+export { resolvePath } from "./path";
+export { OPFSFileSystem } from "./fs";
 
-export class OPFSCache implements Pick<
-  Cache,
-  "match" | "put" | "delete" | "keys"
-> {
+export class OPFSCache
+  implements Pick<Cache, "match" | "put" | "delete" | "keys">
+{
   private readonly fs: OPFSFileSystem;
 
   constructor(rootName: string) {

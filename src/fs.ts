@@ -1,5 +1,5 @@
-import { isNotFound } from "./error.ts";
-import type { CacheEntryMeta } from "./types.ts";
+import { isNotFound } from "./error";
+import type { CacheEntryMeta } from "./types";
 
 const META_SUFFIX = ".meta";
 
@@ -152,7 +152,13 @@ export class OPFSFileSystem {
     const subdirs: Promise<void>[] = [];
     for await (const [name, handle] of dir.entries()) {
       if (handle.kind === "directory") {
-        subdirs.push(this.walk(handle, [...prefix, name], results));
+        subdirs.push(
+          this.walk(
+            handle as FileSystemDirectoryHandle,
+            [...prefix, name],
+            results
+          )
+        );
       } else if (!name.endsWith(META_SUFFIX)) {
         results.push([...prefix, name]);
       }
