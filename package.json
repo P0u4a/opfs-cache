@@ -7,10 +7,12 @@
   "repository": "https://github.com/P0u4a/opfs-cache",
   "author": "P0u4a",
   "scripts": {
-    "test": "bun test"
+    "test": "vitest --browser.headless"
   },
   "devDependencies": {
-    "@types/bun": "latest"
+    "@types/bun": "latest",
+    "@vitest/browser-preview": "^4.0.18",
+    "vitest": "^4.0.18"
   },
   "peerDependencies": {
     "typescript": "^5"
