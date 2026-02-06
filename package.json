@@ -1,0 +1,18 @@
+{
+  "name": "@p0u4a/opfs-cache",
+  "module": "./src/index.ts",
+  "version": "0.0.1",
+  "type": "module",
+  "description": "Web Cache using the Origin Private File System (OPFS) to store large responses.",
+  "repository": "https://github.com/P0u4a/opfs-cache",
+  "author": "P0u4a",
+  "scripts": {
+    "test": "bun test"
+  },
+  "devDependencies": {
+    "@types/bun": "latest"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  }
+}
