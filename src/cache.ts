@@ -2,18 +2,14 @@ import { OPFSFileSystem } from "./fs";
 import { resolvePath } from "./path";
 import type { CacheEntryMeta } from "./types";
 
-export type { CacheEntryMeta } from "./types";
-export type { ResolvedPath } from "./path";
-export { resolvePath } from "./path";
-export { OPFSFileSystem } from "./fs";
-
-export class OPFSCache
-  implements Pick<Cache, "match" | "put" | "delete" | "keys">
-{
+export class OPFSCache implements Pick<
+  Cache,
+  "match" | "put" | "delete" | "keys"
+> {
   private readonly fs: OPFSFileSystem;
 
-  constructor(rootName: string) {
-    this.fs = new OPFSFileSystem(rootName);
+  constructor(root: string) {
+    this.fs = new OPFSFileSystem(root);
   }
 
   async match(
@@ -23,13 +19,14 @@ export class OPFSCache
     const { dir, file } = resolvePath(request);
 
     const entry = await this.fs.readEntry(dir, file);
-    if (entry === undefined) return undefined;
 
-    return new Response(entry.file.stream(), {
-      status: entry.meta?.status ?? 200,
-      statusText: entry.meta?.statusText ?? "",
-      headers: entry.meta?.headers ?? {},
-    });
+    return entry
+      ? new Response(entry.file.stream(), {
+          status: entry.meta?.status ?? 200,
+          statusText: entry.meta?.statusText ?? "",
+          headers: entry.meta?.headers ?? {},
+        })
+      : undefined;
   }
 
   async put(request: RequestInfo | URL, response: Response): Promise<void> {
@@ -61,13 +58,18 @@ export class OPFSCache
     _options?: CacheQueryOptions
   ): Promise<ReadonlyArray<Request>> {
     if (request !== undefined) {
-      const { dir, file } = resolvePath(request);
-      const found = await this.fs.exists(dir, file);
-      if (!found) return [];
-      return [new Request(`/${[...dir, file].join("/")}`)];
+      return this.tryGetKeyOrDefault(request);
     }
 
     const entries = await this.fs.list();
     return entries.map((segs) => new Request(`/${segs.join("/")}`));
+  }
+
+  private async tryGetKeyOrDefault(
+    request: RequestInfo | URL
+  ): Promise<Request[]> {
+    const { dir, file } = resolvePath(request);
+    const found = await this.fs.exists(dir, file);
+    return found ? [new Request(`/${[...dir, file].join("/")}`)] : [];
   }
 }

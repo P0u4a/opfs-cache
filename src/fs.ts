@@ -1,12 +1,15 @@
 import { isNotFound } from "./error";
-import type { CacheEntryMeta } from "./types";
+import type { CacheEntryMeta, NavigationResult, CacheEntryPath } from "./types";
 
 const META_SUFFIX = ".meta";
 
 export class OPFSFileSystem {
   private rootPromise: Promise<FileSystemDirectoryHandle> | null = null;
+  private readonly rootName: string;
 
-  constructor(private readonly rootName: string) {}
+  constructor(rootName: string) {
+    this.rootName = rootName;
+  }
 
   private getRoot(): Promise<FileSystemDirectoryHandle> {
     this.rootPromise ??= navigator.storage
@@ -59,17 +62,18 @@ export class OPFSFileSystem {
     if (dir === undefined) return undefined;
 
     try {
-      const handle = await dir.getFileHandle(fileName);
-      const file = await handle.getFile();
-
-      let meta: CacheEntryMeta | undefined;
-      try {
-        const metaHandle = await dir.getFileHandle(`${fileName}${META_SUFFIX}`);
-        const metaFile = await metaHandle.getFile();
-        meta = JSON.parse(await metaFile.text()) as CacheEntryMeta;
-      } catch (err) {
-        if (!isNotFound(err)) throw err;
-      }
+      const [file, meta] = await Promise.all([
+        dir.getFileHandle(fileName).then((h) => h.getFile()),
+        dir
+          .getFileHandle(`${fileName}${META_SUFFIX}`)
+          .then((h) => h.getFile())
+          .then((f) => f.text())
+          .then((text) => JSON.parse(text) as CacheEntryMeta)
+          .catch((err: unknown) => {
+            if (isNotFound(err)) return undefined;
+            throw err;
+          }),
+      ]);
 
       return { file, meta };
     } catch (err) {
@@ -87,18 +91,7 @@ export class OPFSFileSystem {
     body: ReadableStream<Uint8Array> | null,
     meta: CacheEntryMeta
   ): Promise<void> {
-    const dir = await this.navigate(dirSegments, true);
-    if (dir === undefined) {
-      throw new Error("Failed to create directory structure");
-    }
-
-    // Write meta sidecar first so a crash before data write is a clean miss
-    const metaHandle = await dir.getFileHandle(`${fileName}${META_SUFFIX}`, {
-      create: true,
-    });
-    const metaWritable = await metaHandle.createWritable();
-    await metaWritable.write(JSON.stringify(meta));
-    await metaWritable.close();
+    const dir = (await this.navigate(dirSegments, true))!;
 
     const fileHandle = await dir.getFileHandle(fileName, { create: true });
     const writable = await fileHandle.createWritable();
@@ -107,12 +100,21 @@ export class OPFSFileSystem {
     } else {
       await body.pipeTo(writable);
     }
+
+    const metaHandle = await dir.getFileHandle(`${fileName}${META_SUFFIX}`, {
+      create: true,
+    });
+    const metaWritable = await metaHandle.createWritable();
+    await metaWritable.write(JSON.stringify(meta));
+    await metaWritable.close();
   }
 
   /** Delete a cache entry and clean up empty parent directories. */
   async delete(dirSegments: string[], fileName: string): Promise<boolean> {
-    const dir = await this.navigate(dirSegments, false);
-    if (dir === undefined) return false;
+    const result = await this.navigateWithParents(dirSegments);
+    if (result === undefined) return false;
+
+    const { dir, parents } = result;
 
     let existed = false;
     try {
@@ -128,7 +130,7 @@ export class OPFSFileSystem {
     }
 
     if (existed) {
-      await this.cleanEmptyDirs(dirSegments);
+      await this.cleanEmptyDirs(dirSegments, parents);
     }
 
     return existed;
@@ -137,65 +139,73 @@ export class OPFSFileSystem {
   /**
    * Recursively list all cached entry paths excluding `.meta` sidecars.
    */
-  async list(): Promise<string[][]> {
+  async list(): Promise<CacheEntryPath[]> {
     const root = await this.getRoot();
-    const results: string[][] = [];
-    await this.walk(root, [], results);
-    return results;
+    return this.walk(root, []);
   }
 
   private async walk(
     dir: FileSystemDirectoryHandle,
-    prefix: string[],
-    results: string[][]
-  ): Promise<void> {
-    const subdirs: Promise<void>[] = [];
+    prefix: string[]
+  ): Promise<CacheEntryPath[]> {
+    const results: CacheEntryPath[] = [];
+    const subdirs: Array<Promise<CacheEntryPath[]>> = [];
     for await (const [name, handle] of dir.entries()) {
       if (handle.kind === "directory") {
-        subdirs.push(
-          this.walk(
-            handle as FileSystemDirectoryHandle,
-            [...prefix, name],
-            results
-          )
-        );
+        subdirs.push(this.walk(handle, [...prefix, name]));
       } else if (!name.endsWith(META_SUFFIX)) {
         results.push([...prefix, name]);
       }
     }
     if (subdirs.length > 0) {
-      await Promise.all(subdirs);
+      const nested = await Promise.all(subdirs);
+      for (const entries of nested) {
+        results.push(...entries);
+      }
     }
+    return results;
   }
 
   /**
    * Best-effort removal of empty ancestor directories after a delete.
-   * Traverses once then walks back up, stopping at the first non-empty dir.
+   * Walks the parent handles back up, stopping at the first
+   * non-empty directory.
    */
-  private async cleanEmptyDirs(segments: string[]): Promise<void> {
+  private async cleanEmptyDirs(
+    segments: string[],
+    parents: FileSystemDirectoryHandle[]
+  ): Promise<void> {
     if (segments.length === 0) return;
 
-    // Collect parent handles in a single descent
-    const parents: FileSystemDirectoryHandle[] = [];
-    let dir = await this.getRoot();
-    parents.push(dir);
-    for (let i = 0; i < segments.length - 1; i++) {
-      try {
-        dir = await dir.getDirectoryHandle(segments[i]!);
-        parents.push(dir);
-      } catch {
-        return;
-      }
-    }
-
-    // Try removing empty directories from deepest to shallowest.
-    // removeEntry on a non-empty directory throws, which stops the climb.
-    for (let i = parents.length - 1; i >= 0; i--) {
+    // Try removing empty directories from deepest to shallowest
+    // removeEntry on a non-empty directory throws, which stops the climb
+    for (let i = segments.length - 1; i >= 0; i--) {
       try {
         await parents[i]!.removeEntry(segments[i]!);
       } catch {
         break;
       }
     }
+  }
+
+  /**
+   * Like `navigate`, but also returns every intermediate directory handle.
+   */
+  private async navigateWithParents(
+    segments: string[]
+  ): Promise<NavigationResult | undefined> {
+    const parents: FileSystemDirectoryHandle[] = [];
+    let dir = await this.getRoot();
+    parents.push(dir);
+    for (const seg of segments) {
+      try {
+        dir = await dir.getDirectoryHandle(seg);
+      } catch (err) {
+        if (isNotFound(err)) return undefined;
+        throw err;
+      }
+      parents.push(dir);
+    }
+    return { dir, parents };
   }
 }

@@ -1,7 +1,4 @@
-export interface ResolvedPath {
-  dir: string[];
-  file: string;
-}
+import type { ResolvedPath } from "./types";
 
 /**
  * Resolves a RequestInfo or URL into OPFS directory and file segments.
