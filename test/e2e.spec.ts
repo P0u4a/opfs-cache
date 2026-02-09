@@ -55,6 +55,17 @@ describe("OPFS Cache", () => {
     expect(keys).toEqual([new Request(keyA), new Request(keyB)]);
   });
 
+  it("Lists currently active keys with request", async () => {
+    const keyA = new Request("https://localhost:3000/foo");
+    const keyB = new Request("https://localhost:3000/bar");
+    await cache?.put(keyA, new Response());
+    await cache?.put(keyB, new Response());
+
+    const keys = await cache?.keys(keyA);
+
+    expect(keys).toEqual([new Request(keyA)]);
+  });
+
   it("Deletes a given key", async () => {
     const key = "https://localhost:3000/data";
     const cacheResponse = new Response();
@@ -68,5 +79,14 @@ describe("OPFS Cache", () => {
 
     const maybeResponse = await cache?.match(key);
     expect(maybeResponse).toEqual(undefined);
+  });
+
+  it("Returns undefined when deleting a non-existent key", async () => {
+    const key = "https://localhost:3000/data";
+    const maybeResponse = await cache?.match(key);
+    expect(maybeResponse).toEqual(undefined);
+
+    const isDeleted = await cache?.delete(key);
+    expect(isDeleted).toBe(false);
   });
 });
