@@ -175,7 +175,9 @@ export class OPFSFileSystem {
     const subdirs: Array<Promise<CacheEntryPath[]>> = [];
     for await (const [name, handle] of dir.entries()) {
       if (handle.kind === "directory") {
-        subdirs.push(this.walk(handle, [...prefix, name]));
+        subdirs.push(
+          this.walk(handle as FileSystemDirectoryHandle, [...prefix, name])
+        );
       } else if (!name.endsWith(META_SUFFIX)) {
         results.push([...prefix, name]);
       }
