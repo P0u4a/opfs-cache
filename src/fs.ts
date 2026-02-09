@@ -1,4 +1,4 @@
-import { isNotFound } from "./error";
+import { isNotFound, isQuotaExceeded } from "./error";
 import type { CacheEntryMeta, NavigationResult, CacheEntryPath } from "./types";
 
 const META_SUFFIX = ".meta";
@@ -61,11 +61,13 @@ export class OPFSFileSystem {
     const dir = await this.navigate(dirSegments, false);
     if (dir === undefined) return undefined;
 
+    const metaFileName = `${fileName}${META_SUFFIX}`;
+
     try {
       const [file, meta] = await Promise.all([
         dir.getFileHandle(fileName).then((h) => h.getFile()),
         dir
-          .getFileHandle(`${fileName}${META_SUFFIX}`)
+          .getFileHandle(metaFileName)
           .then((h) => h.getFile())
           .then((f) => f.text())
           .then((text) => JSON.parse(text) as CacheEntryMeta)
@@ -92,21 +94,33 @@ export class OPFSFileSystem {
     meta: CacheEntryMeta
   ): Promise<void> {
     const dir = (await this.navigate(dirSegments, true))!;
+    const metaFileName = `${fileName}${META_SUFFIX}`;
 
-    const fileHandle = await dir.getFileHandle(fileName, { create: true });
-    const writable = await fileHandle.createWritable();
-    if (body === null) {
-      await writable.close();
-    } else {
-      await body.pipeTo(writable);
+    try {
+      const fileHandle = await dir.getFileHandle(fileName, { create: true });
+      const writable = await fileHandle.createWritable();
+      if (body === null) {
+        await writable.close();
+      } else {
+        await body.pipeTo(writable);
+      }
+
+      const metaHandle = await dir.getFileHandle(metaFileName, {
+        create: true,
+      });
+      const metaWritable = await metaHandle.createWritable();
+      await metaWritable.write(JSON.stringify(meta));
+      await metaWritable.close();
+    } catch (err) {
+      // Cleanup partially written files if this entry doesn't fit in cache
+      if (isQuotaExceeded(err)) {
+        await Promise.all([
+          dir.removeEntry(fileName).catch(() => {}),
+          dir.removeEntry(metaFileName).catch(() => {}),
+        ]);
+      }
+      throw err;
     }
-
-    const metaHandle = await dir.getFileHandle(`${fileName}${META_SUFFIX}`, {
-      create: true,
-    });
-    const metaWritable = await metaHandle.createWritable();
-    await metaWritable.write(JSON.stringify(meta));
-    await metaWritable.close();
   }
 
   /** Delete a cache entry and clean up empty parent directories. */
@@ -117,6 +131,7 @@ export class OPFSFileSystem {
     const { dir, parents } = result;
 
     let existed = false;
+    const metaFileName = `${fileName}${META_SUFFIX}`;
     try {
       await dir.removeEntry(fileName);
       existed = true;
@@ -124,7 +139,7 @@ export class OPFSFileSystem {
       if (!isNotFound(err)) throw err;
     }
     try {
-      await dir.removeEntry(`${fileName}${META_SUFFIX}`);
+      await dir.removeEntry(metaFileName);
     } catch (err) {
       if (!isNotFound(err)) throw err;
     }
