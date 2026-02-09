@@ -1,12 +1,17 @@
 # Origin Private File System (OPFS) Cache
 
-Web Cache API compliant implementation using the [Origin Private File System (OPFS)](https://developer.mozilla.org/en-US/docs/Web/API/OPFS) to store responses. Useful for caching large responses such as Hugging Face models or any other large file that exceeds the typical caching quota's of the browser.
+Web Cache API compliant implementation using the [Origin Private File System (OPFS)](https://developer.mozilla.org/en-US/docs/Web/API/OPFS) to store responses. Useful for caching large responses such as Hugging Face models or any other large file that exceeds the typical caching quota's of the browser. Also works in Web Workers.
 
 ## Installation
 
 ```
 npm install @p0u4a/opfs-cache
 ```
+
+## Usage in Web Workers
+
+The OPFS Cache can also be run inside a web worker. It automatically detects if the current execution is happening in a web worker
+and uses the more efficient synchronous read/write file system APIs instead.
 
 ## Quick Start
 

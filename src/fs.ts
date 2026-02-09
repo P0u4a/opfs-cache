@@ -1,14 +1,26 @@
 import { isNotFound, isQuotaExceeded } from "./error";
-import type { CacheEntryMeta, NavigationResult, CacheEntryPath } from "./types";
+import { AsyncIO, SyncIO } from "./io";
+import type {
+  CacheEntryMeta,
+  NavigationResult,
+  CacheEntryPath,
+  FileIO,
+} from "./types";
 
 const META_SUFFIX = ".meta";
+
+const isWebWorker =
+  typeof WorkerGlobalScope !== "undefined" &&
+  globalThis instanceof WorkerGlobalScope;
 
 export class OPFSFileSystem {
   private rootPromise: Promise<FileSystemDirectoryHandle> | null = null;
   private readonly rootName: string;
+  private readonly io: FileIO;
 
   constructor(rootName: string) {
     this.rootName = rootName;
+    this.io = isWebWorker ? new SyncIO() : new AsyncIO();
   }
 
   private getRoot(): Promise<FileSystemDirectoryHandle> {
@@ -65,10 +77,10 @@ export class OPFSFileSystem {
 
     try {
       const [file, meta] = await Promise.all([
-        dir.getFileHandle(fileName).then((h) => h.getFile()),
+        dir.getFileHandle(fileName).then((h) => this.io.readFile(h)),
         dir
           .getFileHandle(metaFileName)
-          .then((h) => h.getFile())
+          .then((h) => this.io.readFile(h))
           .then((f) => f.text())
           .then((text) => JSON.parse(text) as CacheEntryMeta)
           .catch((err: unknown) => {
@@ -98,19 +110,15 @@ export class OPFSFileSystem {
 
     try {
       const fileHandle = await dir.getFileHandle(fileName, { create: true });
-      const writable = await fileHandle.createWritable();
-      if (body === null) {
-        await writable.close();
-      } else {
-        await body.pipeTo(writable);
-      }
+      await this.io.writeFile(fileHandle, body);
 
       const metaHandle = await dir.getFileHandle(metaFileName, {
         create: true,
       });
-      const metaWritable = await metaHandle.createWritable();
-      await metaWritable.write(JSON.stringify(meta));
-      await metaWritable.close();
+      await this.io.writeFile(
+        metaHandle,
+        new Blob([JSON.stringify(meta)]).stream()
+      );
     } catch (err) {
       // Cleanup partially written files if this entry doesn't fit in cache
       if (isQuotaExceeded(err)) {

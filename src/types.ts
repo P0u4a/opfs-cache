@@ -14,4 +14,12 @@ export interface NavigationResult {
   parents: FileSystemDirectoryHandle[];
 }
 
+export interface FileIO {
+  readFile(fileHandle: FileSystemFileHandle): Promise<File>;
+  writeFile(
+    fileHandle: FileSystemFileHandle,
+    body: ReadableStream<Uint8Array> | null
+  ): Promise<void>;
+}
+
 export type CacheEntryPath = string[];
