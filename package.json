@@ -10,7 +10,8 @@
   "author": "P0u4a",
   "scripts": {
     "test": "vitest --browser.headless",
-    "build": "tsc"
+    "build": "tsc",
+    "publish": "npm publish --access public"
   },
   "devDependencies": {
     "@types/bun": "latest",
