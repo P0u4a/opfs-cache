@@ -16,7 +16,7 @@ describe("OPFS Cache", () => {
     cache = null;
   });
 
-  it("Caches response to file system with URL key", async () => {
+  it("caches response to file system with URL key", async () => {
     const cacheUrl = new URL("https://localhost:3000/data");
     const cacheResponse = new Response(new Blob(["0", "1", "1", "0"]));
 
@@ -26,7 +26,7 @@ describe("OPFS Cache", () => {
     expect(cacheResponse).toEqual(response);
   });
 
-  it("Caches response to file system with with Request key", async () => {
+  it("caches response to file system with with Request key", async () => {
     const cacheRequest = new Request("https://localhost:3000/data");
     const cacheResponse = new Response(new Blob(["0", "1", "1", "0"]));
 
@@ -35,7 +35,7 @@ describe("OPFS Cache", () => {
     expect(cacheResponse).toEqual(response);
   });
 
-  it("Caches response to file system with string key", async () => {
+  it("caches response to file system with string key", async () => {
     const cacheString = "https://localhost:3000/data";
     const cacheResponse = new Response(new Blob(["0", "1", "1", "0"]));
 
@@ -44,7 +44,7 @@ describe("OPFS Cache", () => {
     expect(cacheResponse).toEqual(response);
   });
 
-  it("Lists currently active keys", async () => {
+  it("lists currently active keys", async () => {
     const keyA = "https://localhost:3000/foo";
     const keyB = "https://localhost:3000/bar";
     await cache?.put(keyA, new Response());
@@ -55,7 +55,7 @@ describe("OPFS Cache", () => {
     expect(keys).toEqual([new Request(keyA), new Request(keyB)]);
   });
 
-  it("Lists currently active keys with request", async () => {
+  it("lists currently active keys with request", async () => {
     const keyA = new Request("https://localhost:3000/foo");
     const keyB = new Request("https://localhost:3000/bar");
     await cache?.put(keyA, new Response());
@@ -66,7 +66,7 @@ describe("OPFS Cache", () => {
     expect(keys).toEqual([new Request(keyA)]);
   });
 
-  it("Deletes a given key", async () => {
+  it("deletes a given key", async () => {
     const key = "https://localhost:3000/data";
     const cacheResponse = new Response();
     await cache?.put(key, new Response());
@@ -81,7 +81,7 @@ describe("OPFS Cache", () => {
     expect(maybeResponse).toEqual(undefined);
   });
 
-  it("Returns undefined when deleting a non-existent key", async () => {
+  it("returns undefined when deleting a non-existent key", async () => {
     const key = "https://localhost:3000/data";
     const maybeResponse = await cache?.match(key);
     expect(maybeResponse).toEqual(undefined);
