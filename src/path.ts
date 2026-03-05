@@ -1,4 +1,4 @@
-import type { ResolvedPath } from "./types";
+import type { ResolvedPath } from "./types.js";
 
 /**
  * Resolves a RequestInfo or URL into OPFS directory and file segments.

@@ -1,6 +1,6 @@
-import { OPFSFileSystem } from "./fs";
-import { resolvePath } from "./path";
-import type { CacheEntryMeta } from "./types";
+import { OPFSFileSystem } from "./fs.js";
+import { resolvePath } from "./path.js";
+import type { CacheEntryMeta } from "./types.js";
 
 export class OPFSCache implements Pick<
   Cache,

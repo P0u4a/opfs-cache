@@ -1,10 +1,10 @@
-export * from "./cache";
+export * from "./cache.js";
 export type {
   CacheEntryMeta,
   CacheEntryPath,
   FileIO,
   ResolvedPath,
-} from "./types";
-export { resolvePath } from "./path";
-export { OPFSFileSystem } from "./fs";
-export { SyncIO, AsyncIO } from "./io";
+} from "./types.js";
+export { resolvePath } from "./path.js";
+export { OPFSFileSystem } from "./fs.js";
+export { SyncIO, AsyncIO } from "./io.js";

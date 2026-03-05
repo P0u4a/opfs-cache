@@ -1,11 +1,11 @@
-import { isNotFound, isQuotaExceeded } from "./error";
-import { AsyncIO, SyncIO } from "./io";
+import { isNotFound, isQuotaExceeded } from "./error.js";
+import { AsyncIO, SyncIO } from "./io.js";
 import type {
   CacheEntryMeta,
   NavigationResult,
   CacheEntryPath,
   FileIO,
-} from "./types";
+} from "./types.js";
 
 const META_SUFFIX = ".meta";
 

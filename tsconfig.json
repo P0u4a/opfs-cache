@@ -14,7 +14,7 @@
     "verbatimModuleSyntax": true,
     "noEmit": false,
     "declaration": true,
-    "rootDirs": ["src"],
+    "rootDir": "src",
     "outDir": "./dist",
 
     // Best practices
@@ -30,5 +30,6 @@
     "noPropertyAccessFromIndexSignature": false,
   },
 
+  "include": ["src"],
   "exclude": ["test/*", "dist/*"]
 }

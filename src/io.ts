@@ -1,4 +1,4 @@
-import type { FileIO } from "./types";
+import type { FileIO } from "./types.js";
 
 export class AsyncIO implements FileIO {
   readFile(fileHandle: FileSystemFileHandle) {
