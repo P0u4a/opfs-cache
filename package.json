@@ -10,7 +10,7 @@
       "default": "./dist/index.js"
     }
   },
-  "version": "0.1.3",
+  "version": "0.1.4",
   "type": "module",
   "description": "Web Cache using the Origin Private File System (OPFS) to store large responses.",
   "repository": "https://github.com/P0u4a/opfs-cache",
