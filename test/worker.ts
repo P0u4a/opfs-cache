@@ -7,9 +7,14 @@ type WorkerCommand =
   | { id: number; action: "keys" }
   | { id: number; action: "keys"; url: string };
 
-const cache = new OPFSCache("test-worker");
+let cache: OPFSCache;
+
+const ready = OPFSCache.open("test-worker").then((c) => {
+  cache = c;
+});
 
 globalThis.onmessage = async (e: MessageEvent<WorkerCommand>) => {
+  await ready;
   const { id, action } = e.data;
   try {
     let result: unknown;

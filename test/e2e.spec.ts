@@ -4,8 +4,8 @@ import { OPFSCache } from "../src";
 describe("OPFS Cache", () => {
   let cache: OPFSCache | null;
 
-  beforeEach(() => {
-    cache = new OPFSCache("test");
+  beforeEach(async () => {
+    cache = await OPFSCache.open("test");
   });
 
   afterEach(async () => {
