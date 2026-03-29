@@ -195,6 +195,7 @@ export class OPFSFileSystem {
    * Best-effort removal of empty ancestor directories after a delete.
    * Walks the parent handles back up, stopping at the first
    * non-empty directory.
+   * Note: parents always has one more element (the root) than segments.
    */
   private async cleanEmptyDirs(
     segments: string[],
