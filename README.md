@@ -1,6 +1,6 @@
 # Origin Private File System (OPFS) Cache
 
-Web Cache API compliant implementation using the [Origin Private File System (OPFS)](https://developer.mozilla.org/en-US/docs/Web/API/OPFS) to store responses. Useful for caching large responses such as Hugging Face models or any other large file that exceeds the typical caching quota's of the browser. Also works in Web Workers.
+Web Cache API compliant implementation using the [Origin Private File System (OPFS)](https://developer.mozilla.org/en-US/docs/Web/API/OPFS) to store responses. Useful for caching large responses such as Hugging Face models while also giving you queryability over your data. Also works in Web Workers.
 
 ## Installation
 
