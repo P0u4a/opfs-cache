@@ -40,6 +40,12 @@ const entries = await cache.keys();
 await cache.delete(new Request("https://example.com/path/to/file"));
 ```
 
+### Check storage usage stats
+
+```ts
+const { quota, estimatedRemaining } = await cache.usage();
+```
+
 ## Use as a Custom Cache For Hugging Face Transformers.js
 
 ```ts
