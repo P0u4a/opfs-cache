@@ -63,7 +63,7 @@ export class OPFSFileSystem {
   }
 
   /**
-   * Read both the data file and its `.meta` sidecar. Returns `undefined` on cache miss.
+   * Read both the data file and its metadata sidecar. Returns `undefined` on cache miss.
    */
   async readEntry(
     dirSegments: string[],
@@ -166,7 +166,7 @@ export class OPFSFileSystem {
   }
 
   /**
-   * Recursively list all cached entry paths excluding `.meta` sidecars.
+   * Recursively list all cached entry paths excluding metadata sidecars.
    */
   async list(): Promise<CacheEntryPath[]> {
     const root = this.root;
