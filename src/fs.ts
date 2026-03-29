@@ -1,4 +1,4 @@
-import { isNotFound, isQuotaExceeded } from "./error.js";
+import { isNotFound } from "./error.js";
 import { AsyncIO, SyncIO } from "./io.js";
 import type {
   CacheEntryMeta,
@@ -14,20 +14,19 @@ const isWebWorker =
   globalThis instanceof WorkerGlobalScope;
 
 export class OPFSFileSystem {
-  private rootPromise: Promise<FileSystemDirectoryHandle> | null = null;
-  private readonly rootName: string;
+  private readonly root: FileSystemDirectoryHandle;
   private readonly io: FileIO;
 
-  constructor(rootName: string) {
-    this.rootName = rootName;
-    this.io = isWebWorker ? new SyncIO() : new AsyncIO();
+  private constructor(root: FileSystemDirectoryHandle, io: FileIO) {
+    this.root = root;
+    this.io = io;
   }
 
-  private getRoot(): Promise<FileSystemDirectoryHandle> {
-    this.rootPromise ??= navigator.storage
-      .getDirectory()
-      .then((opfs) => opfs.getDirectoryHandle(this.rootName, { create: true }));
-    return this.rootPromise;
+  static async create(rootName: string): Promise<OPFSFileSystem> {
+    const io = isWebWorker ? new SyncIO() : new AsyncIO();
+    const opfs = await navigator.storage.getDirectory();
+    const root = await opfs.getDirectoryHandle(rootName, { create: true });
+    return new OPFSFileSystem(root, io);
   }
 
   /**
@@ -38,7 +37,7 @@ export class OPFSFileSystem {
     segments: string[],
     create: boolean
   ): Promise<FileSystemDirectoryHandle | undefined> {
-    let dir = await this.getRoot();
+    let dir = this.root;
     for (const seg of segments) {
       try {
         dir = await dir.getDirectoryHandle(seg, { create });
@@ -170,7 +169,7 @@ export class OPFSFileSystem {
    * Recursively list all cached entry paths excluding `.meta` sidecars.
    */
   async list(): Promise<CacheEntryPath[]> {
-    const root = await this.getRoot();
+    const root = this.root;
     return this.walk(root, []);
   }
 
@@ -228,7 +227,7 @@ export class OPFSFileSystem {
     segments: string[]
   ): Promise<NavigationResult | undefined> {
     const parents: FileSystemDirectoryHandle[] = [];
-    let dir = await this.getRoot();
+    let dir = this.root;
     parents.push(dir);
     for (const seg of segments) {
       try {
