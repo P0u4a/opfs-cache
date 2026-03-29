@@ -70,6 +70,6 @@ export class OPFSCache implements Pick<
   ): Promise<Request[]> {
     const { dir, file } = resolvePath(request);
     const found = await this.fs.exists(dir, file);
-    return found ? [new Request(`/${[...dir, file].join("/")}`)] : [];
+    return found ? [new Request(request)] : [];
   }
 }
