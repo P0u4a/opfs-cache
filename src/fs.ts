@@ -7,7 +7,7 @@ import type {
   FileIO,
 } from "./types.js";
 
-const META_SUFFIX = ".meta";
+const META_PREFIX = "__meta__";
 
 const isWebWorker =
   typeof WorkerGlobalScope !== "undefined" &&
@@ -73,7 +73,7 @@ export class OPFSFileSystem {
     const dir = await this.navigate(dirSegments, false);
     if (dir === undefined) return undefined;
 
-    const metaFileName = `${fileName}${META_SUFFIX}`;
+    const metaFileName = `${META_PREFIX}${fileName}`;
 
     try {
       const [file, meta] = await Promise.all([
@@ -106,7 +106,7 @@ export class OPFSFileSystem {
     meta: CacheEntryMeta
   ): Promise<void> {
     const dir = (await this.navigate(dirSegments, true))!;
-    const metaFileName = `${fileName}${META_SUFFIX}`;
+    const metaFileName = `${META_PREFIX}${fileName}`;
 
     try {
       const fileHandle = await dir.getFileHandle(fileName, { create: true });
@@ -139,7 +139,7 @@ export class OPFSFileSystem {
     const { dir, parents } = result;
 
     let existed = false;
-    const metaFileName = `${fileName}${META_SUFFIX}`;
+    const metaFileName = `${META_PREFIX}${fileName}`;
     try {
       await dir.removeEntry(fileName);
       existed = true;
@@ -178,7 +178,7 @@ export class OPFSFileSystem {
         subdirs.push(
           this.walk(handle as FileSystemDirectoryHandle, [...prefix, name])
         );
-      } else if (!name.endsWith(META_SUFFIX)) {
+      } else if (!name.startsWith(META_PREFIX)) {
         results.push([...prefix, name]);
       }
     }
