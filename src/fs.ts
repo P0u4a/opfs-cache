@@ -108,27 +108,34 @@ export class OPFSFileSystem {
     const dir = (await this.navigate(dirSegments, true))!;
     const metaFileName = `${META_PREFIX}${fileName}`;
 
-    try {
-      const fileHandle = await dir.getFileHandle(fileName, { create: true });
-      await this.io.writeFile(fileHandle, body);
+    const writeBody = async () => {
+      const handle = await dir.getFileHandle(fileName, { create: true });
+      await this.io.writeFile(handle, body);
+    };
 
-      const metaHandle = await dir.getFileHandle(metaFileName, {
-        create: true,
-      });
+    const writeMeta = async () => {
+      const handle = await dir.getFileHandle(metaFileName, { create: true });
       await this.io.writeFile(
-        metaHandle,
+        handle,
         new Blob([JSON.stringify(meta)]).stream()
       );
-    } catch (err) {
-      // Cleanup partially written files if this entry doesn't fit in cache
-      if (isQuotaExceeded(err)) {
-        await Promise.all([
-          dir.removeEntry(fileName).catch(() => {}),
-          dir.removeEntry(metaFileName).catch(() => {}),
-        ]);
-      }
-      throw err;
-    }
+    };
+
+    const results = await Promise.allSettled([writeBody(), writeMeta()]);
+
+    const failed = results.filter(
+      (r): r is PromiseRejectedResult => r.status === "rejected"
+    );
+
+    if (failed.length === 0) return;
+
+    // Cleanup failed write attempts
+    await Promise.all([
+      dir.removeEntry(fileName).catch((e) => console.error(e)),
+      dir.removeEntry(metaFileName).catch((e) => console.error(e)),
+    ]);
+
+    throw new Error(`${failed[0]!.reason}\n${failed?.[1]?.reason ?? ""}`);
   }
 
   /** Delete a cache entry and clean up empty parent directories. */
