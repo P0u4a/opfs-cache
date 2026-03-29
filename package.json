@@ -10,15 +10,19 @@
       "default": "./dist/index.js"
     }
   },
-  "version": "0.1.4",
+  "version": "0.2.4",
   "type": "module",
   "description": "Web Cache using the Origin Private File System (OPFS) to store large responses.",
-  "repository": "https://github.com/P0u4a/opfs-cache",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/P0u4a/opfs-cache.git"
+  },
+  "license": "MIT",
   "author": "P0u4a",
   "scripts": {
     "test": "vitest --browser.headless",
     "build": "tsc",
-    "publish": "tsc && npm publish --access public"
+    "push": "tsc && npm publish --access public"
   },
   "devDependencies": {
     "@types/bun": "latest",
@@ -31,5 +35,10 @@
   },
   "files": [
     "dist"
+  ],
+  "keywords": [
+    "opfs",
+    "cache",
+    "origin private file system"
   ]
 }
