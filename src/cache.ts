@@ -8,8 +8,13 @@ export class OPFSCache implements Pick<
 > {
   private readonly fs: OPFSFileSystem;
 
-  constructor(root: string) {
-    this.fs = new OPFSFileSystem(root);
+  private constructor(fs: OPFSFileSystem) {
+    this.fs = fs;
+  }
+
+  static async open(root: string): Promise<OPFSCache> {
+    const fs = await OPFSFileSystem.create(root);
+    return new OPFSCache(fs);
   }
 
   async match(
@@ -63,6 +68,13 @@ export class OPFSCache implements Pick<
 
     const entries = await this.fs.list();
     return entries.map((segs) => new Request(`/${segs.join("/")}`));
+  }
+
+  async usage(): Promise<{ quota: number; estimatedRemaining: number }> {
+    const estimate = await navigator.storage.estimate();
+    const quota = estimate.quota ?? 0;
+    const used = estimate.usage ?? 0;
+    return { quota, estimatedRemaining: quota - used };
   }
 
   private async tryGetKeyOrDefault(
