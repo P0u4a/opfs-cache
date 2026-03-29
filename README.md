@@ -46,7 +46,7 @@ await cache.delete(new Request("https://example.com/path/to/file"));
 import { OPFSCache } from "@p0u4a/opfs-cache";
 import { env } from "@huggingface/transformers";
 
-const opfsModelCache = new OPFSCache("transformers-cache");
+const opfsModelCache = await OPFSCache.open("transformers-cache");
 
 env.useBrowserCache = false;
 env.useCustomCache = true;
